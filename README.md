@@ -25,6 +25,7 @@ pip install -r requirements.txt
 | `data.py` | Downloads and merges the raw files, cleans the labels, and makes the stratified train/val/test split |
 | `neural_net.py` | The `NeuralNetwork` class (`preprocess`, `train`, `predict`, `evaluate`), the activations, and the `SGD` / `Adam` optimizers |
 | `gradient_check.py` | Checks backprop's gradients against finite-difference estimates |
+| `train.py` | Command-line script that trains and evaluates one configuration |
 
 ## Implementation summary
 
@@ -53,12 +54,39 @@ python gradient_check.py
 
 This prints the largest relative error between the analytic and numerical gradients for each activation, with 1 and 2 hidden layers. All cases currently pass, with errors of about 1e-8 or less.
 
+### Single run
+
+```bash
+python train.py                                   # defaults: --hidden 64, relu, adam, lr 0.001
+python train.py --hidden 64 32 --activation tanh --optimizer sgd --lr 0.01
+python train.py --hidden 64 32 --test --save results/run.json
+```
+
+The script prints the configuration it is using, including the seed, then a log line per epoch with train/val loss and accuracy. At the end it prints a summary of accuracy, macro-F1 and loss.
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--hidden` | `64` | Neurons per hidden layer, 1 or 2 values (e.g. `--hidden 64 32`) |
+| `--activation` | `relu` | Hidden activation: `sigmoid`, `tanh` or `relu` |
+| `--optimizer` | `adam` | `sgd` or `adam` |
+| `--lr` | `0.001` | Learning rate |
+| `--epochs` | `50` | Number of training epochs |
+| `--batch-size` | `64` | Mini-batch size |
+| `--beta1` / `--beta2` / `--eps` | `0.9` / `0.999` / `1e-8` | Adam settings (SGD ignores them) |
+| `--seed` | `42` | Random seed for the split, weight initialization and shuffling |
+| `--split` | `0.70 0.15 0.15` | Train / validation / test ratios |
+| `--test` | off | Also evaluate on the test set. Use this only for final configurations. |
+| `--save PATH` | — | Write the config, per-epoch history and metrics to a JSON file |
+| `--quiet` | off | Turn off the per-epoch log |
+
+Two runs with the same arguments give identical results.
+
 ## Status
 
 - [x] Data loading and stratified splitting
 - [x] Preprocessing, network, backpropagation, SGD and Adam
 - [x] Gradient check
-- [ ] `train.py`: command-line interface for a single run
+- [x] `train.py`: command-line interface for a single run
 - [ ] Experiment sweep (`experiments.json`) and results table
 - [ ] Learning curves and test accuracy for the best configuration per activation
 - [ ] Logistic regression baseline
