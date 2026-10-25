@@ -70,6 +70,7 @@ def train_command(config):
             f" --lr {config['lr']} --epochs {config['epochs']}"
             f" --batch-size {config['batch_size']}"
             f" --beta1 {config['beta1']} --beta2 {config['beta2']} --eps {config['eps']}"
+            f" --threshold {config['threshold']}"
             f" --seed {config['seed']} --split {' '.join(map(str, config['split']))}")
 
 

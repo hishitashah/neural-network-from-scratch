@@ -19,7 +19,7 @@ from neural_net import ACTIVATIONS, OPTIMIZERS, NeuralNetwork
 
 # Config keys passed straight to NeuralNetwork.__init__.
 MODEL_KEYS = ("hidden", "activation", "optimizer", "lr", "epochs",
-              "batch_size", "beta1", "beta2", "eps", "seed")
+              "batch_size", "beta1", "beta2", "eps", "threshold", "seed")
 
 
 def build_parser():
@@ -35,6 +35,8 @@ def build_parser():
     p.add_argument("--beta1", type=float, default=0.9, help="Adam 1st-moment decay")
     p.add_argument("--beta2", type=float, default=0.999, help="Adam 2nd-moment decay")
     p.add_argument("--eps", type=float, default=1e-8, help="Adam epsilon")
+    p.add_argument("--threshold", type=float, default=0.5,
+                   help="decision threshold: predict >50K when P(>50K) >= threshold")
     p.add_argument("--seed", type=int, default=42,
                    help="random seed for the split, weight init and shuffling")
     p.add_argument("--split", type=float, nargs=3, default=[0.70, 0.15, 0.15],

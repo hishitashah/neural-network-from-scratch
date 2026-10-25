@@ -123,6 +123,10 @@ def main():
                    help="logistic regression solver iterations")
     p.add_argument("--target-acc", type=float, default=0.85,
                    help="val accuracy used to measure convergence speed in the optimizer table")
+    p.add_argument("--compare-hidden", type=int, nargs="+", default=[64, 32],
+                   help="architecture shown in the SGD vs Adam plot")
+    p.add_argument("--compare-lr", type=float, default=0.01,
+                   help="learning rate shown in the SGD vs Adam plot")
     args = p.parse_args()
 
     df = pd.read_csv(os.path.join(args.results, "results.csv"))
@@ -148,13 +152,17 @@ def main():
         ax.set_ylabel("")
     save(fig, os.path.join(plots_dir, "learning_curves.png"))
 
-    # 3a. SGD vs Adam: same activation, hidden 64-32, lr 0.01; only the
-    #     optimizer differs between the two lines in each panel.
+    # 3a. SGD vs Adam: same activation, architecture (--compare-hidden) and
+    #     lr (--compare-lr); only the optimizer differs between the two lines.
+    cmp_hidden = "-".join(map(str, args.compare_hidden))
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), sharey=True)
     for ax, act in zip(axes, ACTIVATION_ORDER):
         for opt, color in (("sgd", BLUE), ("adam", ORANGE)):
-            row = df[(df.activation == act) & (df.hidden == "64-32")
-                     & (df.optimizer == opt) & np.isclose(df.lr, 0.01)].iloc[0]
+            match = df[(df.activation == act) & (df.hidden == cmp_hidden)
+                       & (df.optimizer == opt) & np.isclose(df.lr, args.compare_lr)]
+            if match.empty:
+                raise SystemExit(f"no run with hidden {cmp_hidden}, lr {args.compare_lr} in results.csv")
+            row = match.iloc[0]
             h = load_run(args.results, int(row["id"]))["history"]
             epochs = np.arange(1, len(h["val_loss"]) + 1)
             ax.plot(epochs, h["val_loss"], color=color, linewidth=2, label=f"{opt.upper()} (run {row['id']})")
@@ -162,7 +170,8 @@ def main():
         style_axes(ax)
         ax.set_xlim(0, len(epochs) + 7)
         ax.set_xlabel("epoch")
-        ax.set_title(f"{act}, hidden 64-32, lr 0.01", fontsize=10, color=INK, loc="left")
+        ax.set_title(f"{act}, hidden {cmp_hidden}, lr {args.compare_lr:g}", fontsize=10,
+                     color=INK, loc="left")
         ax.legend(frameon=False, fontsize=9, labelcolor=INK_2)
     axes[0].set_ylabel("validation BCE loss")
     save(fig, os.path.join(plots_dir, "sgd_vs_adam.png"))
@@ -212,13 +221,17 @@ def main():
     logreg = LogisticRegression(C=args.baseline_C, max_iter=args.baseline_max_iter,
                                 random_state=first["seed"])
     logreg.fit(Xtr, y_train)
+
+    def lr_predict(X):  # same decision threshold as the networks
+        return (logreg.predict_proba(X)[:, 1] >= first["threshold"]).astype(int)
+
     final_rows.append({
         "model": "Logistic regression (baseline)",
         "config": f"C {args.baseline_C:g}, max_iter {args.baseline_max_iter}",
-        "train_acc": accuracy_score(y_train, logreg.predict(Xtr)),
-        "val_acc": accuracy_score(y_val, logreg.predict(Xva)),
-        "test_acc": accuracy_score(y_test, logreg.predict(Xte)),
-        "test_macro_f1": f1_score(y_test, logreg.predict(Xte), average="macro"),
+        "train_acc": accuracy_score(y_train, lr_predict(Xtr)),
+        "val_acc": accuracy_score(y_val, lr_predict(Xva)),
+        "test_acc": accuracy_score(y_test, lr_predict(Xte)),
+        "test_macro_f1": f1_score(y_test, lr_predict(Xte), average="macro"),
         "command": (f"python final_evaluation.py --baseline-C {args.baseline_C:g}"
                     f" --baseline-max-iter {args.baseline_max_iter}"),
     })

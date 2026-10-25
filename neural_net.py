@@ -115,7 +115,7 @@ class NeuralNetwork:
 
     def __init__(self, hidden=(64,), activation="relu", optimizer="adam",
                  lr=0.001, epochs=50, batch_size=64, beta1=0.9, beta2=0.999,
-                 eps=1e-8, seed=42):
+                 eps=1e-8, threshold=0.5, seed=42):
         if not 1 <= len(hidden) <= 2:
             raise ValueError("hidden must list 1 or 2 layer sizes")
         if activation not in ACTIVATIONS:
@@ -129,6 +129,7 @@ class NeuralNetwork:
         self.optimizer_name = optimizer
         self.lr, self.epochs, self.batch_size = lr, epochs, batch_size
         self.adam_kwargs = dict(beta1=beta1, beta2=beta2, eps=eps)
+        self.threshold = threshold  # P(>50K) at or above this -> predict class 1
         self.seed = seed
         # One generator drives both weight init and batch shuffling, so a
         # given seed reproduces a run exactly.
@@ -286,8 +287,8 @@ class NeuralNetwork:
         z_out, _, _ = self._forward(X)
         return sigmoid(z_out).ravel()
 
-    def predict(self, X, threshold=0.5):
-        return (self.predict_proba(X) >= threshold).astype(int)
+    def predict(self, X):
+        return (self.predict_proba(X) >= self.threshold).astype(int)
 
     # ------------------------------------------------------------- evaluate --
     def evaluate(self, X, y):

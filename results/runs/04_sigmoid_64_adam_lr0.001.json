@@ -5,6 +5,7 @@
     "beta1": 0.9,
     "beta2": 0.999,
     "eps": 1e-08,
+    "threshold": 0.5,
     "seed": 42,
     "split": [
       0.7,
@@ -238,6 +239,6 @@
     "macro_f1": 0.7835039169379614,
     "loss": 0.30639335522969396
   },
-  "train_seconds": 5.17294600000605,
-  "command": "python train.py --hidden 64 --activation sigmoid --optimizer adam --lr 0.001 --epochs 50 --batch-size 64 --beta1 0.9 --beta2 0.999 --eps 1e-08 --seed 42 --split 0.7 0.15 0.15"
+  "train_seconds": 6.276214791000257,
+  "command": "python train.py --hidden 64 --activation sigmoid --optimizer adam --lr 0.001 --epochs 50 --batch-size 64 --beta1 0.9 --beta2 0.999 --eps 1e-08 --threshold 0.5 --seed 42 --split 0.7 0.15 0.15"
 }
