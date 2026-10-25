@@ -28,6 +28,7 @@ pip install -r requirements.txt
 | `train.py` | Command-line script that trains and evaluates one configuration |
 | `experiments.json` | The experiment sweep config: shared defaults plus a grid of values to combine |
 | `run_experiments.py` | Runs every configuration in the sweep and writes the results table to `results/` |
+| `final_evaluation.py` | Learning curves, the SGD vs Adam comparison, test results for the best run per activation, and the logistic regression baseline |
 
 ## Implementation summary
 
@@ -100,6 +101,29 @@ Before training, the script checks that the grid meets requirement 5 of the assi
 | `results/results.csv`, `results/results.md` | One row per configuration: parameters, train/val accuracy, train/val macro-F1, final train/val loss, the epoch with the lowest validation loss, and training time. All metrics are from the final (50th) epoch. |
 | `results/runs/<id>_<activation>_<hidden>_<optimizer>_lr<lr>.json` | One file per run with its config, per-epoch history and metrics, plus the `train.py` command that reproduces that run on its own |
 
+### Final evaluation
+
+Run this after `run_experiments.py`:
+
+```bash
+python final_evaluation.py               # ~30 s; optional: --baseline-C 1.0 --baseline-max-iter 1000
+```
+
+1. For each activation, picks the best configuration from `results/results.csv` using validation data only.
+2. Plots the learning curves from the saved histories.
+3. Retrains the three best configurations with the same seed and evaluates them on the test set. The script checks that each retrained model matches its saved validation accuracy exactly.
+4. Trains a logistic regression baseline (scikit-learn) on the same split and the same preprocessed features.
+
+This is the only script that uses the test set.
+
+| Output | Contents |
+|---|---|
+| `results/final.md`, `results/final.csv` | Train/val/test accuracy and test macro-F1 for the best run per activation and for logistic regression, with the command that reproduces each row |
+| `results/plots/learning_curve_<activation>.png` | Training and validation loss vs epoch for the best run of each activation. A dotted line marks the epoch with the lowest validation loss. |
+| `results/plots/learning_curves.png` | The three learning curves side by side, with the same y-axis |
+| `results/plots/sgd_vs_adam.png` | Validation loss of SGD vs Adam for each activation, with hidden 64-32 and lr 0.01. Only the optimizer differs between the two lines. |
+| `results/optimizer_comparison.csv` | For every matched SGD/Adam pair: the first epoch reaching 0.85 validation accuracy, the lowest validation loss and the epoch it happened, and final validation accuracy and macro-F1 |
+
 ## Status
 
 - [x] Data loading and stratified splitting
@@ -107,8 +131,8 @@ Before training, the script checks that the grid meets requirement 5 of the assi
 - [x] Gradient check
 - [x] `train.py`: command-line interface for a single run
 - [x] Experiment sweep (`experiments.json`) and results table
-- [ ] Learning curves and test accuracy for the best configuration per activation
-- [ ] Logistic regression baseline
+- [x] Learning curves and test accuracy for the best configuration per activation
+- [x] Logistic regression baseline
 - [ ] Report
 
 ## Assumptions
